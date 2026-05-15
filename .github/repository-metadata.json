@@ -1,0 +1,13 @@
+{
+  "description": "Deterministic fixture data from tiny schemas 🌱",
+  "homepage": "https://github.com/rogerchappel/testseed#readme",
+  "topics": [
+    "fixtures",
+    "testing",
+    "typescript",
+    "cli",
+    "deterministic",
+    "seed-data",
+    "mock-data"
+  ]
+}

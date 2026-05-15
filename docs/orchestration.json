@@ -1,0 +1,15 @@
+{
+  "project": "testseed",
+  "owner": "factory-subagent",
+  "workspace": "/Users/roger/Developer/my-opensource/testseed",
+  "repo": "rogerchappel/testseed",
+  "rules": [
+    "Work only in this repo",
+    "Local-first deterministic MVP",
+    "Fixture-backed tests and CLI smoke",
+    "Atomic meaningful commits",
+    "Push main after verification",
+    "Protect main best-effort"
+  ],
+  "requiredChecks": ["npm test", "npm run check", "npm run build", "npm run smoke", "bash scripts/validate.sh"]
+}

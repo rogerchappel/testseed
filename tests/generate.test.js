@@ -45,3 +45,11 @@ test('dry run returns a manifest without writing outputs', async () => {
   assert.equal(manifest.files.length, 6);
   await assert.rejects(() => fs.readFile(path.join(out, 'people.json'), 'utf8'), /ENOENT/);
 });
+
+test('clean option removes stale files in output directory', async () => {
+  const out = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-clean-'));
+  await fs.writeFile(path.join(out, 'stale.txt'), 'old');
+  await generate(schemaPath, { seed: 'clean', outDir: out, clean: true });
+  await assert.rejects(() => fs.readFile(path.join(out, 'stale.txt'), 'utf8'), /ENOENT/);
+  assert.match(await fs.readFile(path.join(out, 'people.csv'), 'utf8'), /user_001/);
+});

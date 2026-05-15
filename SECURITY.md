@@ -56,3 +56,10 @@ Out of scope:
 ## Disclosure
 
 Coordinate disclosure with maintainers before publishing vulnerability details.
+
+## Fixture data guidance
+
+Please do not report real secrets by embedding them in fixture schemas or generated output examples. If a vulnerability depends on a secret-looking path or value, replace it with a synthetic equivalent and describe the behavior.
+
+TestSeed intentionally rejects common secret-looking output paths; bypasses of that guard are security-relevant and welcome as reports.
+

@@ -23,7 +23,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test tests/*.test.js",
+    "test": "npm run build && node --test tests/*.test.js",
     "smoke": "npm run build && node dist/cli.js generate examples/people.yaml --seed 42 --out .tmp/smoke --clean && node dist/cli.js inspect .tmp/smoke/manifest.json && node dist/cli.js validate .tmp/smoke/manifest.json",
     "package:smoke": "npm pack --dry-run",
     "release:check": "npm test && npm run check && npm run build && npm run smoke && npm run package:smoke"

@@ -1,0 +1,8 @@
+name: bad
+count: 0
+fields:
+  id:
+    type: id
+outputs:
+  - path: ../oops.json
+    format: json

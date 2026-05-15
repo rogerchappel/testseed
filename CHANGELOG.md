@@ -19,3 +19,10 @@ format and uses semantic versioning when versioned releases are published.
   `https://github.com/rogerchappel/testseed/releases/latest`
 
 Replace placeholder links once the first release tag exists.
+
+## 0.1.0 - MVP
+
+- Added local-first TypeScript CLI with init, generate, inspect, and validate commands.
+- Added deterministic schema-backed generators and multi-format outputs.
+- Added fixture-backed tests, smoke checks, and safety documentation.
+

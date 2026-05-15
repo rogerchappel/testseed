@@ -38,3 +38,10 @@ test('inspect summarizes manifest contents', async () => {
   assert.match(summary, /testseed manifest/);
   assert.match(summary, /people.json/);
 });
+
+test('dry run returns a manifest without writing outputs', async () => {
+  const out = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-dry-'));
+  const manifest = await generate(schemaPath, { seed: 'dry', outDir: out, dryRun: true });
+  assert.equal(manifest.files.length, 6);
+  await assert.rejects(() => fs.readFile(path.join(out, 'people.json'), 'utf8'), /ENOENT/);
+});

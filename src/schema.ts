@@ -44,7 +44,7 @@ export function parseTinyYaml(text: string): TestSeedSchema {
       continue;
     }
 
-    if (section === 'fields' && indent === 2 && line.endsWith(':')) {
+    if ((section === 'fields' || section === 'field') && indent === 2 && line.endsWith(':')) {
       const name = line.slice(0, -1);
       currentField = { type: 'string' };
       schema.fields[name] = currentField;

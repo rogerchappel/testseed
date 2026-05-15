@@ -27,7 +27,7 @@ test('different seeds alter generated content', async () => {
 });
 
 test('schema validation rejects invalid counts', () => {
-  assert.throws(() => parseTinyYaml('name: nopecount: 0'), /Unknown root key|requires/);
+  assert.throws(() => parseTinyYaml('name: nopecount: 0'), /count must be|requires/);
   assert.throws(() => parseTinyYaml('name: nope\ncount: 0\nfields:\n  id:\n    type: id\noutputs:\n  - path: out.json\n    format: json\n'), /count must be/);
 });
 

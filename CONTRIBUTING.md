@@ -77,3 +77,11 @@ If verification cannot be run, explain why and provide the exact command maintai
 ## Maintainer Review
 
 Maintainers may request narrower scope, clearer verification, additional tests, or safer defaults before merging.
+
+## TestSeed development loop
+
+1. Add or update fixture schemas under `fixtures/schemas` or `examples`.
+2. Keep generator changes deterministic for the same seed.
+3. Run `npm test`, `npm run check`, `npm run build`, `npm run smoke`, and `bash scripts/validate.sh` before pushing.
+4. Include schema, risk, and verification notes in pull requests.
+

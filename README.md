@@ -102,6 +102,13 @@ npm run smoke
 bash scripts/validate.sh
 ```
 
+## Links
+
+- [CLI reference](docs/CLI.md)
+- [Schema reference](docs/SCHEMA.md)
+- [Manifest format](docs/MANIFEST.md)
+- [Safety notes](docs/SAFETY.md)
+
 ## Status
 
 MVP. Useful for small fixtures today; intentionally boring and deterministic.

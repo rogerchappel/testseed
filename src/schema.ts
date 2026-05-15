@@ -52,7 +52,7 @@ export function parseTinyYaml(text: string): TestSeedSchema {
       continue;
     }
 
-    if (section === 'outputs' && indent === 2 && line.startsWith('- ')) {
+    if ((section === 'outputs' || section === 'output') && indent === 2 && line.startsWith('- ')) {
       currentOutput = { path: '', format: 'json' };
       schema.outputs.push(currentOutput);
       const rest = line.slice(2);

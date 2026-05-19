@@ -1,6 +1,6 @@
 # TestSeed PRD
 
-Status: in-progress
+Status: MVP complete
 
 ## One-liner
 
@@ -42,7 +42,7 @@ testseed inspect fixtures/generated/manifest.json
 
 ## Local-first safety
 
-- Default to dry-run or read-only behavior for write/apply style commands.
+- Keep write operations explicit with `generate --out <dir>`, optional `--dry-run`, and opt-in `--clean` regeneration.
 - Keep generated artifacts deterministic and reviewable.
 - Fail closed on suspicious paths, binary blobs, or likely secrets.
 

@@ -1,7 +1,7 @@
 {
   "project": "testseed",
   "owner": "factory-subagent",
-  "workspace": "/Users/roger/Developer/my-opensource/testseed",
+  "workspace": "/Users/roger/Developer/my-opensource/_worktrees/20260520-am/testseed",
   "repo": "rogerchappel/testseed",
   "rules": [
     "Work only in this repo",

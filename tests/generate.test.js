@@ -53,3 +53,13 @@ test('clean option removes stale files in output directory', async () => {
   await assert.rejects(() => fs.readFile(path.join(out, 'stale.txt'), 'utf8'), /ENOENT/);
   assert.match(await fs.readFile(path.join(out, 'people.csv'), 'utf8'), /user_001/);
 });
+
+test('generation refuses secret-looking output filenames', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-secret-path-'));
+  const schema = path.join(temp, 'schema.yaml');
+  await fs.writeFile(schema, 'name: unsafe\ncount: 1\nfields:\n  id:\n    type: id\noutputs:\n  - path: private-key.pem\n    format: env\n');
+  await assert.rejects(
+    () => generate(schema, { seed: 1, outDir: path.join(temp, 'out') }),
+    /Refusing likely secret-looking path/
+  );
+});

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { generate, inspectManifest, readManifest } from './index.js';
+import { generate, inspectManifest, readManifest, validateManifestFiles } from './index.js';
 import { starterSchema } from './init.js';
 import { TestSeedError } from './errors.js';
 
@@ -59,6 +59,7 @@ async function main(argv: string[]): Promise<void> {
     const manifest = await readManifest(target);
     if (manifest.tool !== 'testseed' || !manifest.seed || manifest.files.length === 0) throw new TestSeedError('Invalid testseed manifest');
     for (const file of manifest.files) if (!file.path || file.bytes < 0 || !/^[a-f0-9]{64}$/.test(file.sha256)) throw new TestSeedError(`Invalid manifest file entry: ${file.path}`);
+    await validateManifestFiles(target, manifest);
     console.log(`Manifest OK: ${manifest.files.length} files`);
     return;
   }

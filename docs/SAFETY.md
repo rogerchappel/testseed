@@ -18,3 +18,8 @@ Built-in generators produce synthetic fixture values. Do not paste production da
 ## Reviewability
 
 Generated manifests include byte counts and SHA-256 hashes. Commit generated fixtures only when they are intended to be stable test assets.
+Use `testseed validate` to detect missing or changed files; validation treats
+the manifest directory as the base for every recorded relative path.
+
+Dry runs are side-effect free. Even with `--clean`, `--dry-run` does not create,
+remove, or alter the requested output directory.

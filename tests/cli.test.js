@@ -37,3 +37,43 @@ test('cli refuses unsafe output paths', async () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Refusing path outside/);
 });
+
+test('validate reports tampered content hash mismatches', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-validate-hash-'));
+  const out = path.join(temp, 'out');
+  const generated = spawnSync(process.execPath, [cli, 'generate', path.resolve('examples/people.yaml'), '--out', out], { encoding: 'utf8' });
+  assert.equal(generated.status, 0, generated.stderr);
+  const target = path.join(out, 'people.json');
+  const original = await fs.readFile(target);
+  const tampered = Buffer.from(original);
+  tampered[0] = tampered[0] === 0x5b ? 0x7b : 0x5b;
+  await fs.writeFile(target, tampered);
+
+  const result = spawnSync(process.execPath, [cli, 'validate', path.join(out, 'manifest.json')], { encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /SHA-256 mismatch for people\.json: expected [a-f0-9]{64}, got [a-f0-9]{64}/);
+});
+
+test('validate reports byte count mismatches', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-validate-bytes-'));
+  const out = path.join(temp, 'out');
+  const generated = spawnSync(process.execPath, [cli, 'generate', path.resolve('examples/people.yaml'), '--out', out], { encoding: 'utf8' });
+  assert.equal(generated.status, 0, generated.stderr);
+  await fs.appendFile(path.join(out, 'people.json'), 'tampered');
+
+  const result = spawnSync(process.execPath, [cli, 'validate', path.join(out, 'manifest.json')], { encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Byte count mismatch for people\.json: expected \d+, got \d+/);
+});
+
+test('validate reports missing generated files', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-validate-missing-'));
+  const out = path.join(temp, 'out');
+  const generated = spawnSync(process.execPath, [cli, 'generate', path.resolve('examples/people.yaml'), '--out', out], { encoding: 'utf8' });
+  assert.equal(generated.status, 0, generated.stderr);
+  await fs.rm(path.join(out, 'people.json'));
+
+  const result = spawnSync(process.execPath, [cli, 'validate', path.join(out, 'manifest.json')], { encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Missing generated file: people\.json/);
+});

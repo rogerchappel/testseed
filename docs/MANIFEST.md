@@ -14,4 +14,8 @@ Every generation writes `manifest.json` beside the generated files.
 }
 ```
 
-`generatedAt` is intentionally stable in the MVP so fixture diffs remain quiet. File entries contain relative paths, output formats, byte counts, SHA-256 hashes, and record counts where applicable.
+`generatedAt` is intentionally stable in the MVP so fixture diffs remain quiet.
+File entries contain relative paths, output formats, byte counts, SHA-256
+hashes, and record counts where applicable. `testseed validate` resolves each
+entry relative to the directory containing `manifest.json`, then verifies the
+recorded byte count and SHA-256 against the file on disk.

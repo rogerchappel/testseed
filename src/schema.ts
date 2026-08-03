@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises';
 import { fail } from './errors.js';
-import type { FieldSchema, OutputFormat, OutputSchema, TestSeedSchema } from './types.js';
+import type { FieldSchema, FieldType, OutputFormat, OutputSchema, TestSeedSchema } from './types.js';
 
 const outputFormats = new Set<OutputFormat>(['json', 'jsonl', 'csv', 'md', 'env', 'tree']);
+const fieldTypes = new Set<FieldType>(['id', 'name', 'slug', 'date', 'path', 'semver', 'sha', 'enum', 'int', 'template']);
 
 function parseScalar(raw: string): unknown {
   const value = raw.trim();
@@ -46,7 +47,7 @@ export function parseTinyYaml(text: string): TestSeedSchema {
 
     if ((section === 'fields' || section === 'field') && indent === 2 && line.endsWith(':')) {
       const name = line.slice(0, -1);
-      currentField = { type: 'string' };
+      currentField = { type: '' as FieldType };
       schema.fields[name] = currentField;
       section = 'field';
       continue;
@@ -74,7 +75,7 @@ export function parseTinyYaml(text: string): TestSeedSchema {
 }
 
 function assignField(field: FieldSchema, key: string, value: unknown): void {
-  if (key === 'type') field.type = String(value);
+  if (key === 'type') field.type = String(value) as FieldType;
   else if (key === 'prefix') field.prefix = String(value);
   else if (key === 'start') field.start = String(value);
   else if (key === 'stepDays') field.stepDays = Number(value);
@@ -102,6 +103,8 @@ export function validateSchema(schema: TestSeedSchema): TestSeedSchema {
   for (const [name, field] of Object.entries(schema.fields)) {
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) fail(`Invalid field name: ${name}`, 'SCHEMA_INVALID');
     if (!field.type) fail(`Field ${name} requires type`, 'SCHEMA_INVALID');
+    if (!fieldTypes.has(field.type)) fail(`Unsupported field type for ${name}: ${field.type}`, 'SCHEMA_INVALID');
+    validateFieldOptions(name, field);
   }
   if (schema.outputs.length === 0) fail('Schema requires at least one output', 'SCHEMA_INVALID');
   for (const output of schema.outputs) {
@@ -109,6 +112,34 @@ export function validateSchema(schema: TestSeedSchema): TestSeedSchema {
     if (!outputFormats.has(output.format)) fail(`Unsupported output format: ${output.format}`, 'SCHEMA_INVALID');
   }
   return schema;
+}
+
+function validateFieldOptions(name: string, field: FieldSchema): void {
+  if (field.type === 'date') {
+    if (field.start !== undefined && !isIsoDate(field.start)) fail(`Field ${name} start must be an ISO date (YYYY-MM-DD)`, 'SCHEMA_INVALID');
+    if (field.stepDays !== undefined && !Number.isInteger(field.stepDays)) fail(`Field ${name} stepDays must be an integer`, 'SCHEMA_INVALID');
+  }
+  if (field.type === 'sha' && field.length !== undefined && (!Number.isInteger(field.length) || field.length < 1 || field.length > 64)) {
+    fail(`Field ${name} length must be an integer from 1 to 64`, 'SCHEMA_INVALID');
+  }
+  if (field.type === 'enum') {
+    if (!field.values?.length) fail(`Field ${name} requires at least one enum value`, 'SCHEMA_INVALID');
+    if (field.weights !== undefined) {
+      if (field.weights.length !== field.values.length) fail(`Field ${name} weights must match values`, 'SCHEMA_INVALID');
+      if (field.weights.some((weight) => !Number.isFinite(weight) || weight <= 0)) fail(`Field ${name} weights must be positive numbers`, 'SCHEMA_INVALID');
+    }
+  }
+  if (field.type === 'int') {
+    const min = field.min ?? 0;
+    const max = field.max ?? 100;
+    if (!Number.isInteger(min) || !Number.isInteger(max)) fail(`Field ${name} min and max must be integers`, 'SCHEMA_INVALID');
+    if (min > max) fail(`Field ${name} min must not exceed max`, 'SCHEMA_INVALID');
+  }
+}
+
+function isIsoDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  return new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value;
 }
 
 export async function readSchema(filePath: string): Promise<TestSeedSchema> {

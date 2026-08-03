@@ -1,7 +1,8 @@
 export type OutputFormat = 'json' | 'jsonl' | 'csv' | 'md' | 'env' | 'tree';
+export type FieldType = 'id' | 'name' | 'slug' | 'date' | 'path' | 'semver' | 'sha' | 'enum' | 'int' | 'template';
 
 export interface FieldSchema {
-  type: string;
+  type: FieldType;
   prefix?: string;
   start?: string;
   stepDays?: number;

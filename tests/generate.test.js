@@ -31,6 +31,31 @@ test('schema validation rejects invalid counts', () => {
   assert.throws(() => parseTinyYaml('name: nope\ncount: 0\nfields:\n  id:\n    type: id\noutputs:\n  - path: out.json\n    format: json\n'), /count must be/);
 });
 
+test('schema validation accepts every built-in field type', () => {
+  const types = ['id', 'name', 'slug', 'date', 'path', 'semver', 'sha', 'enum', 'int', 'template'];
+  const fields = types.map((type) => `  ${type}_field:\n    type: ${type}`).join('\n');
+  const schema = parseTinyYaml(`name: builtins\ncount: 1\nfields:\n${fields}\noutputs:\n  - path: out.json\n    format: json\n`);
+
+  assert.deepEqual(Object.values(schema.fields).map((field) => field.type), types);
+});
+
+test('schema validation rejects unknown field types with SCHEMA_INVALID', () => {
+  assert.throws(
+    () => parseTinyYaml('name: unknown\ncount: 1\nfields:\n  mystery:\n    type: definitely-not-a-generator\noutputs:\n  - path: out.json\n    format: json\n'),
+    (error) => error?.code === 'SCHEMA_INVALID' && /Unsupported field type.*definitely-not-a-generator/.test(error.message)
+  );
+});
+
+test('unknown field types are rejected before output is written', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-unknown-type-'));
+  const schema = path.join(temp, 'schema.yaml');
+  const out = path.join(temp, 'out');
+  await fs.writeFile(schema, 'name: unknown\ncount: 1\nfields:\n  mystery:\n    type: definitely-not-a-generator\noutputs:\n  - path: out.json\n    format: json\n');
+
+  await assert.rejects(() => generate(schema, { seed: 1, outDir: out }), (error) => error?.code === 'SCHEMA_INVALID');
+  await assert.rejects(() => fs.access(out), /ENOENT/);
+});
+
 test('inspect summarizes manifest contents', async () => {
   const out = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-inspect-'));
   await generate(schemaPath, { seed: 7, outDir: out });

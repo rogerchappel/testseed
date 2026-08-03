@@ -33,10 +33,29 @@ test('schema validation rejects invalid counts', () => {
 
 test('schema validation accepts every built-in field type', () => {
   const types = ['id', 'name', 'slug', 'date', 'path', 'semver', 'sha', 'enum', 'int', 'template'];
-  const fields = types.map((type) => `  ${type}_field:\n    type: ${type}`).join('\n');
+  const options = { enum: '\n    values: [one, two]' };
+  const fields = types.map((type) => `  ${type}_field:\n    type: ${type}${options[type] ?? ''}`).join('\n');
   const schema = parseTinyYaml(`name: builtins\ncount: 1\nfields:\n${fields}\noutputs:\n  - path: out.json\n    format: json\n`);
 
   assert.deepEqual(Object.values(schema.fields).map((field) => field.type), types);
+});
+
+test('schema validation rejects invalid generator-specific options', () => {
+  const field = (definition) => `name: invalid\ncount: 1\nfields:\n  value:\n${definition}\noutputs:\n  - path: out.json\n    format: json\n`;
+  const invalidDefinitions = [
+    '    type: date\n    start: 2024-02-30',
+    '    type: date\n    stepDays: 1.5',
+    '    type: sha\n    length: 0',
+    '    type: enum\n    values: []',
+    '    type: enum\n    values: [one, two]\n    weights: [1]',
+    '    type: enum\n    values: [one]\n    weights: [0]',
+    '    type: int\n    min: 2\n    max: 1',
+    '    type: int\n    min: 1.5'
+  ];
+
+  for (const definition of invalidDefinitions) {
+    assert.throws(() => parseTinyYaml(field(definition)), (error) => error?.code === 'SCHEMA_INVALID');
+  }
 });
 
 test('schema validation rejects unknown field types with SCHEMA_INVALID', () => {

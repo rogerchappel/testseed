@@ -22,6 +22,10 @@ Generate fixtures and `manifest.json`.
 testseed generate fixtures/schema.yaml --seed 42 --out fixtures/generated
 ```
 
+The command validates field types and generator-specific options before
+writing output. Unsupported types and invalid options fail with a nonzero exit;
+the underlying library error code is `SCHEMA_INVALID`.
+
 Options:
 
 - `--seed <seed>`: deterministic seed. Defaults to `1`.

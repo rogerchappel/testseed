@@ -9,7 +9,7 @@ const help = `testseed — deterministic fixture data from tiny schemas 🌱
 
 Usage:
   testseed init <schema.yaml> [--force]
-  testseed generate <schema.yaml> --seed <seed> --out <dir> [--clean] [--dry-run]
+  testseed generate <schema.yaml> --out <dir> [--seed <seed>] [--clean] [--dry-run]
   testseed inspect <manifest.json>
   testseed validate <manifest.json>
 
@@ -18,11 +18,44 @@ Commands:
   generate   Generate fixture files and a manifest.
   inspect    Summarize a generated manifest.
   validate   Check manifest shape and file metadata.
+
+Generate options:
+  --out <dir>    Required output directory.
+  --seed <seed>  Deterministic seed (default: 1).
+  --clean        Recreate the output directory first.
+  --dry-run      Print the manifest without changing the output directory.
 `;
 
-function flag(args: string[], name: string, fallback?: string): string | undefined {
-  const index = args.indexOf(name);
-  return index >= 0 ? args[index + 1] : fallback;
+interface GenerateOptions {
+  outDir?: string;
+  seed: string;
+  clean: boolean;
+  dryRun: boolean;
+}
+
+function parseGenerateOptions(args: string[]): GenerateOptions {
+  const options: GenerateOptions = { seed: '1', clean: false, dryRun: false };
+  const seen = new Set<string>();
+
+  for (let index = 0; index < args.length; index += 1) {
+    const option = args[index];
+    if (!option.startsWith('-')) throw new TestSeedError(`Unexpected generate argument: ${option}`);
+    if (!['--out', '--seed', '--clean', '--dry-run'].includes(option)) throw new TestSeedError(`Unknown generate option: ${option}`);
+    if (seen.has(option)) throw new TestSeedError(`Duplicate generate option: ${option}`);
+    seen.add(option);
+
+    if (option === '--clean') options.clean = true;
+    else if (option === '--dry-run') options.dryRun = true;
+    else {
+      const value = args[index + 1];
+      if (!value || value.startsWith('-')) throw new TestSeedError(`${option} requires a value`);
+      if (option === '--out') options.outDir = value;
+      else options.seed = value;
+      index += 1;
+    }
+  }
+
+  return options;
 }
 
 async function main(argv: string[]): Promise<void> {
@@ -41,12 +74,11 @@ async function main(argv: string[]): Promise<void> {
   }
   if (command === 'generate') {
     if (!target) throw new TestSeedError('generate requires a schema path');
-    const outDir = flag(rest, '--out');
-    const seed = flag(rest, '--seed', '1');
+    const { outDir, seed, clean, dryRun } = parseGenerateOptions(rest);
     if (!outDir) throw new TestSeedError('generate requires --out <dir>');
-    const manifest = await generate(target, { seed: seed ?? '1', outDir, clean: rest.includes('--clean'), dryRun: rest.includes('--dry-run') });
+    const manifest = await generate(target, { seed, outDir, clean, dryRun });
     console.log(`Generated ${manifest.files.length} files into ${outDir} with seed ${manifest.seed}`);
-    if (rest.includes('--dry-run')) console.log(JSON.stringify(manifest, null, 2));
+    if (dryRun) console.log(JSON.stringify(manifest, null, 2));
     return;
   }
   if (command === 'inspect') {

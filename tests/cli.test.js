@@ -29,6 +29,47 @@ test('cli init, generate, inspect, validate flow works', async () => {
   assert.equal(validated.status, 0, validated.stderr);
 });
 
+test('generate rejects options used as --out and --seed values', () => {
+  const schema = path.resolve('examples/people.yaml');
+  const missingOut = spawnSync(process.execPath, [cli, 'generate', schema, '--out', '--clean'], { encoding: 'utf8' });
+  assert.notEqual(missingOut.status, 0);
+  assert.match(missingOut.stderr, /--out requires a value/);
+
+  const missingSeed = spawnSync(process.execPath, [cli, 'generate', schema, '--seed', '--out', 'fixtures'], { encoding: 'utf8' });
+  assert.notEqual(missingSeed.status, 0);
+  assert.match(missingSeed.stderr, /--seed requires a value/);
+});
+
+test('generate rejects missing values, unknown options, and unexpected arguments', () => {
+  const schema = path.resolve('examples/people.yaml');
+  const cases = [
+    { args: ['--out'], message: /--out requires a value/ },
+    { args: ['--seed'], message: /--seed requires a value/ },
+    { args: ['--out=fixtures'], message: /Unknown generate option: --out=fixtures/ },
+    { args: ['--out', 'fixtures', '--unknown'], message: /Unknown generate option: --unknown/ },
+    { args: ['--out', 'fixtures', 'extra'], message: /Unexpected generate argument: extra/ },
+  ];
+
+  for (const { args, message } of cases) {
+    const result = spawnSync(process.execPath, [cli, 'generate', schema, ...args], { encoding: 'utf8' });
+    assert.notEqual(result.status, 0, args.join(' '));
+    assert.match(result.stderr, message);
+  }
+});
+
+test('generate preserves default seed and boolean option behavior', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-cli-options-'));
+  const out = path.join(temp, 'out');
+  await fs.mkdir(out);
+  await fs.writeFile(path.join(out, 'stale.txt'), 'stale');
+
+  const result = spawnSync(process.execPath, [cli, 'generate', path.resolve('examples/people.yaml'), '--dry-run', '--clean', '--out', out], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /with seed 1/);
+  assert.match(result.stdout, /"seed": "1"/);
+  assert.equal(await fs.readFile(path.join(out, 'stale.txt'), 'utf8'), 'stale');
+});
+
 test('cli refuses unsafe output paths', async () => {
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-unsafe-'));
   const schema = path.join(temp, 'schema.yaml');

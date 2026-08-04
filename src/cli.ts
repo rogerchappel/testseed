@@ -9,7 +9,7 @@ const help = `testseed — deterministic fixture data from tiny schemas 🌱
 
 Usage:
   testseed init <schema.yaml> [--force]
-  testseed generate <schema.yaml> --seed <seed> --out <dir> [--clean] [--dry-run]
+  testseed generate <schema.yaml> --out <dir> [--seed <seed>] [--clean] [--dry-run]
   testseed inspect <manifest.json>
   testseed validate <manifest.json>
 
@@ -18,6 +18,12 @@ Commands:
   generate   Generate fixture files and a manifest.
   inspect    Summarize a generated manifest.
   validate   Check manifest shape and file metadata.
+
+Generate options:
+  --out <dir>    Required output directory.
+  --seed <seed>  Deterministic seed (default: 1).
+  --clean        Recreate the output directory first.
+  --dry-run      Print the manifest without changing the output directory.
 `;
 
 interface GenerateOptions {

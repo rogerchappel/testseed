@@ -34,6 +34,11 @@ Options:
 - `--dry-run`: print the prospective manifest without creating, removing, or
   changing the output directory. This remains side-effect free with `--clean`.
 
+Value-taking options use a separate argument, such as `--out fixtures/generated`.
+Each option may be passed at most once. Missing values, `--option=value` syntax,
+unknown options, and unexpected positional arguments produce a nonzero exit with
+a specific diagnostic.
+
 ## `inspect`
 
 Print a concise manifest summary.

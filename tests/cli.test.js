@@ -79,6 +79,24 @@ test('cli refuses unsafe output paths', async () => {
   assert.match(result.stderr, /Refusing path outside/);
 });
 
+test('generate reports invalid schema references without creating output', async () => {
+  const schemas = [
+    'name: invalid-output\ncount: 1\nfields:\n  id:\n    type: id\noutputs:\n  - path: out.json\n    format: json\n    fields: [missing]\n',
+    'name: invalid-template\ncount: 1\nfields:\n  label:\n    type: template\n    template: user-{missing}\noutputs:\n  - path: out.json\n    format: json\n',
+  ];
+
+  for (const [index, contents] of schemas.entries()) {
+    const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-cli-reference-'));
+    const schema = path.join(temp, `schema-${index}.yaml`);
+    const out = path.join(temp, 'out');
+    await fs.writeFile(schema, contents);
+    const result = spawnSync(process.execPath, [cli, 'generate', schema, '--out', out], { encoding: 'utf8' });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Unknown (output field|template reference)/);
+    await assert.rejects(() => fs.access(out), /ENOENT/);
+  }
+});
+
 test('validate reports tampered content hash mismatches', async () => {
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-validate-hash-'));
   const out = path.join(temp, 'out');

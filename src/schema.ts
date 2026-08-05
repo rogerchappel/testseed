@@ -105,13 +105,43 @@ export function validateSchema(schema: TestSeedSchema): TestSeedSchema {
     if (!field.type) fail(`Field ${name} requires type`, 'SCHEMA_INVALID');
     if (!fieldTypes.has(field.type)) fail(`Unsupported field type for ${name}: ${field.type}`, 'SCHEMA_INVALID');
     validateFieldOptions(name, field);
+    for (const reference of templateReferences(field)) {
+      if (!(reference in schema.fields)) fail(`Unknown template reference in field ${name}: ${reference}`, 'SCHEMA_INVALID');
+    }
   }
+  validateTemplateCycles(schema);
   if (schema.outputs.length === 0) fail('Schema requires at least one output', 'SCHEMA_INVALID');
   for (const output of schema.outputs) {
     if (!output.path) fail('Each output requires path', 'SCHEMA_INVALID');
     if (!outputFormats.has(output.format)) fail(`Unsupported output format: ${output.format}`, 'SCHEMA_INVALID');
+    for (const field of output.fields ?? []) {
+      if (!(field in schema.fields)) fail(`Unknown output field: ${field}`, 'SCHEMA_INVALID');
+    }
   }
   return schema;
+}
+
+function templateReferences(field: FieldSchema): string[] {
+  if (field.type !== 'template' || field.template === undefined) return [];
+  return [...field.template.matchAll(/\{([A-Za-z_][A-Za-z0-9_]*)\}/g)]
+    .map((match) => match[1])
+    .filter((reference) => reference !== 'index');
+}
+
+function validateTemplateCycles(schema: TestSeedSchema): void {
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const visit = (name: string): void => {
+    if (visiting.has(name)) fail(`Circular template reference involving field ${name}`, 'SCHEMA_INVALID');
+    if (visited.has(name)) return;
+    visiting.add(name);
+    for (const reference of templateReferences(schema.fields[name])) {
+      if (schema.fields[reference].type === 'template') visit(reference);
+    }
+    visiting.delete(name);
+    visited.add(name);
+  };
+  for (const name of Object.keys(schema.fields)) visit(name);
 }
 
 function validateFieldOptions(name: string, field: FieldSchema): void {

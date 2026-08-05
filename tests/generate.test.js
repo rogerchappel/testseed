@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { generate, inspectManifest, parseTinyYaml } from '../dist/index.js';
+import { buildRecords, generate, inspectManifest, parseTinyYaml } from '../dist/index.js';
 
 const schemaPath = path.resolve('fixtures/schemas/people.yaml');
 
@@ -40,6 +40,20 @@ test('schema validation accepts every built-in field type', () => {
   assert.deepEqual(Object.values(schema.fields).map((field) => field.type), types);
 });
 
+test('schema validation accepts output subsets and template references', () => {
+  const schema = parseTinyYaml('name: references\ncount: 1\nfields:\n  label:\n    type: template\n    template: user-{id}\n  id:\n    type: id\noutputs:\n  - path: out.json\n    format: json\n    fields: [label]\n');
+
+  assert.deepEqual(schema.outputs[0].fields, ['label']);
+  assert.equal(buildRecords(schema, '1')[0].label, 'user-id_001');
+});
+
+test('schema validation rejects unknown output fields and template references', () => {
+  const schema = (fieldLine, template = 'user-{id}') => `name: invalid\ncount: 1\nfields:\n  label:\n    type: template\n    template: ${template}\n  id:\n    type: id\noutputs:\n  - path: out.json\n    format: json\n    fields: [${fieldLine}]\n`;
+
+  assert.throws(() => parseTinyYaml(schema('missing')), (error) => error?.code === 'SCHEMA_INVALID' && /Unknown output field: missing/.test(error.message));
+  assert.throws(() => parseTinyYaml(schema('id', 'user-{missing}')), (error) => error?.code === 'SCHEMA_INVALID' && /Unknown template reference.*missing/.test(error.message));
+});
+
 test('schema validation rejects invalid generator-specific options', () => {
   const field = (definition) => `name: invalid\ncount: 1\nfields:\n  value:\n${definition}\noutputs:\n  - path: out.json\n    format: json\n`;
   const invalidDefinitions = [
@@ -73,6 +87,23 @@ test('unknown field types are rejected before output is written', async () => {
 
   await assert.rejects(() => generate(schema, { seed: 1, outDir: out }), (error) => error?.code === 'SCHEMA_INVALID');
   await assert.rejects(() => fs.access(out), /ENOENT/);
+});
+
+test('unknown cross-field references are rejected before output is written', async () => {
+  const schemas = [
+    'name: invalid-output\ncount: 1\nfields:\n  id:\n    type: id\noutputs:\n  - path: out.json\n    format: json\n    fields: [id, missing]\n',
+    'name: invalid-template\ncount: 1\nfields:\n  id:\n    type: id\n  label:\n    type: template\n    template: user-{missing}\noutputs:\n  - path: out.json\n    format: json\n    fields: [id]\n',
+  ];
+
+  for (const [index, contents] of schemas.entries()) {
+    const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-unknown-reference-'));
+    const schema = path.join(temp, 'schema.yaml');
+    const out = path.join(temp, 'out');
+    await fs.writeFile(schema, contents);
+
+    await assert.rejects(() => generate(schema, { seed: 1, outDir: out }), (error) => error?.code === 'SCHEMA_INVALID');
+    await assert.rejects(() => fs.access(out), /ENOENT/);
+  }
 });
 
 test('inspect summarizes manifest contents', async () => {

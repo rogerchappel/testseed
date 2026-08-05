@@ -2,7 +2,7 @@ import { buildRecords } from './generators.js';
 import { prepareOutDir, writeGeneratedFile } from './io.js';
 import { createManifest, manifestFile, readManifest, validateManifestFiles } from './manifest.js';
 import { renderOutput } from './renderers.js';
-import { readSchema } from './schema.js';
+import { readSchema, validateSchema } from './schema.js';
 import { seedToString } from './random.js';
 import type { GenerateOptions, Manifest, TestSeedSchema } from './types.js';
 
@@ -17,6 +17,7 @@ export async function generate(schemaPath: string, options: GenerateOptions): Pr
 }
 
 export async function generateFromSchema(schema: TestSeedSchema, schemaPath: string, options: GenerateOptions): Promise<Manifest> {
+  validateSchema(schema);
   const seed = seedToString(options.seed);
   const records = buildRecords(schema, seed);
   const files = [];

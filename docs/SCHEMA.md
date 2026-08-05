@@ -25,6 +25,11 @@ Common keys:
 - `min` / `max`: range for `int`.
 - `template`: string for `template` fields.
 
+Template placeholders may use `{index}` or reference any declared field by
+name, including a field declared later in the schema. References are resolved
+independently of declaration order. Unknown field names and circular template
+references are rejected with `SCHEMA_INVALID` before generation writes output.
+
 Generator-specific constraints are validated before generation:
 
 - `date.start` must be an ISO calendar date (`YYYY-MM-DD`), and `stepDays`
@@ -41,7 +46,9 @@ written.
 
 - `path`: relative output path under `--out`.
 - `format`: `json`, `jsonl`, `csv`, `md`, `env`, or `tree`.
-- `fields`: optional ordered field subset.
+- `fields`: optional ordered field subset. Every entry must name a declared
+  field; unknown names are rejected with `SCHEMA_INVALID` before output is
+  created.
 - `items`: optional explicit item list for `tree` outputs.
 
 ## Determinism model

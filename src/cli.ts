@@ -58,14 +58,29 @@ function parseGenerateOptions(args: string[]): GenerateOptions {
   return options;
 }
 
+function parseInitOptions(args: string[]): { force: boolean } {
+  let force = false;
+  for (const argument of args) {
+    if (argument !== '--force') throw new TestSeedError(`Unknown init option: ${argument}`);
+    if (force) throw new TestSeedError('Duplicate init option: --force');
+    force = true;
+  }
+  return { force };
+}
+
+function rejectTrailingArguments(command: string, args: string[]): void {
+  if (args.length > 0) throw new TestSeedError(`Unexpected ${command} argument: ${args[0]}`);
+}
+
 async function main(argv: string[]): Promise<void> {
   const [command, target, ...rest] = argv;
   if (!command || command === '--help' || command === '-h') { console.log(help); return; }
   if (command === 'init') {
     if (!target) throw new TestSeedError('init requires a schema path');
+    const { force } = parseInitOptions(rest);
     const full = path.resolve(target);
     await fs.mkdir(path.dirname(full), { recursive: true });
-    if (!rest.includes('--force')) {
+    if (!force) {
       try { await fs.access(full); throw new TestSeedError(`Refusing to overwrite ${target}; pass --force`); } catch (error) { if (!(error instanceof TestSeedError)) { /* absent is okay */ } else throw error; }
     }
     await fs.writeFile(full, starterSchema(), 'utf8');
@@ -83,11 +98,13 @@ async function main(argv: string[]): Promise<void> {
   }
   if (command === 'inspect') {
     if (!target) throw new TestSeedError('inspect requires a manifest path');
+    rejectTrailingArguments('inspect', rest);
     console.log(await inspectManifest(target));
     return;
   }
   if (command === 'validate') {
     if (!target) throw new TestSeedError('validate requires a manifest path');
+    rejectTrailingArguments('validate', rest);
     const manifest = await readManifest(target);
     if (manifest.tool !== 'testseed' || !manifest.seed || manifest.files.length === 0) throw new TestSeedError('Invalid testseed manifest');
     for (const file of manifest.files) if (!file.path || file.bytes < 0 || !/^[a-f0-9]{64}$/.test(file.sha256)) throw new TestSeedError(`Invalid manifest file entry: ${file.path}`);

@@ -29,6 +29,36 @@ test('cli init, generate, inspect, validate flow works', async () => {
   assert.equal(validated.status, 0, validated.stderr);
 });
 
+test('cli init rejects invalid options before touching the schema', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-init-args-'));
+  const schema = path.join(temp, 'nested', 'schema.yaml');
+  const invalid = spawnSync(process.execPath, [cli, 'init', schema, '--bogus'], { encoding: 'utf8' });
+  assert.notEqual(invalid.status, 0);
+  assert.match(invalid.stderr, /Unknown init option: --bogus/);
+  await assert.rejects(fs.access(path.dirname(schema)));
+
+  await fs.mkdir(path.dirname(schema));
+  await fs.writeFile(schema, 'existing schema');
+  const duplicate = spawnSync(process.execPath, [cli, 'init', schema, '--force', '--force'], { encoding: 'utf8' });
+  assert.notEqual(duplicate.status, 0);
+  assert.match(duplicate.stderr, /Duplicate init option: --force/);
+  assert.equal(await fs.readFile(schema, 'utf8'), 'existing schema');
+
+  const forced = spawnSync(process.execPath, [cli, 'init', schema, '--force'], { encoding: 'utf8' });
+  assert.equal(forced.status, 0, forced.stderr);
+  assert.notEqual(await fs.readFile(schema, 'utf8'), 'existing schema');
+});
+
+test('cli inspect and validate reject trailing arguments before reading a manifest', () => {
+  const missingManifest = path.join(os.tmpdir(), 'testseed-not-read.json');
+  for (const command of ['inspect', 'validate']) {
+    const result = spawnSync(process.execPath, [cli, command, missingManifest, 'extra'], { encoding: 'utf8' });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, new RegExp(`Unexpected ${command} argument: extra`));
+    assert.doesNotMatch(result.stderr, /ENOENT/);
+  }
+});
+
 test('generate rejects options used as --out and --seed values', () => {
   const schema = path.resolve('examples/people.yaml');
   const missingOut = spawnSync(process.execPath, [cli, 'generate', schema, '--out', '--clean'], { encoding: 'utf8' });

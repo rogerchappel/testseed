@@ -12,7 +12,9 @@ Write a starter schema.
 testseed init fixtures/schema.yaml
 ```
 
-Pass `--force` to overwrite an existing schema.
+Pass `--force` once to overwrite an existing schema. Unknown options, duplicate
+flags, and unexpected positional arguments fail before any directory or schema
+is created or overwritten.
 
 ## `generate`
 
@@ -47,6 +49,9 @@ Print a concise manifest summary.
 testseed inspect fixtures/generated/manifest.json
 ```
 
+This command accepts exactly one manifest path and no options or trailing
+arguments.
+
 ## `validate`
 
 Check manifest shape, then read every recorded file relative to the manifest's
@@ -56,3 +61,6 @@ produce a nonzero exit with a file-specific diagnostic.
 ```bash
 testseed validate fixtures/generated/manifest.json
 ```
+
+This command accepts exactly one manifest path and no options or trailing
+arguments.

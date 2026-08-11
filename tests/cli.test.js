@@ -166,3 +166,34 @@ test('validate reports missing generated files', async () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Missing generated file: people\.json/);
 });
+
+test('validate rejects malformed manifest shapes with actionable errors', async () => {
+  const cases = [
+    { manifest: null, message: /Invalid testseed manifest: root must be an object/ },
+    { manifest: [], message: /Invalid testseed manifest: root must be an object/ },
+    { manifest: { tool: 'testseed', version: '0.1.0', schema: 'schema.yaml', seed: '1', generatedAt: 'now', decisions: [] }, message: /Invalid testseed manifest: files must be a non-empty array/ },
+    { manifest: { tool: 'testseed', version: '0.1.0', schema: 'schema.yaml', seed: '1', generatedAt: 'now', files: {}, decisions: [] }, message: /Invalid testseed manifest: files must be a non-empty array/ },
+    { manifest: { tool: 'testseed', version: '0.1.0', schema: 'schema.yaml', seed: '1', generatedAt: 'now', files: [null], decisions: [] }, message: /Invalid testseed manifest: files\[0\] must be an object/ },
+    { manifest: { tool: 'testseed', version: '0.1.0', schema: 'schema.yaml', seed: '1', generatedAt: 'now', files: [{ path: 'data.json', format: 'json', bytes: '10', sha256: 'a'.repeat(64) }], decisions: [] }, message: /Invalid testseed manifest: files\[0\]\.bytes must be a non-negative integer/ },
+  ];
+
+  for (const [index, { manifest, message }] of cases.entries()) {
+    const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-malformed-manifest-'));
+    const manifestPath = path.join(temp, `manifest-${index}.json`);
+    await fs.writeFile(manifestPath, JSON.stringify(manifest));
+    const result = spawnSync(process.execPath, [cli, 'validate', manifestPath], { encoding: 'utf8' });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, message);
+    assert.doesNotMatch(result.stderr, /TypeError/);
+  }
+});
+
+test('validate reports malformed manifest JSON without exposing parser errors', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-invalid-json-'));
+  const manifestPath = path.join(temp, 'manifest.json');
+  await fs.writeFile(manifestPath, '{"tool":');
+  const result = spawnSync(process.execPath, [cli, 'validate', manifestPath], { encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Invalid testseed manifest: invalid JSON/);
+  assert.doesNotMatch(result.stderr, /SyntaxError|Unexpected end/);
+});

@@ -32,7 +32,58 @@ export function createManifest(schemaPath: string, seed: string, files: Manifest
 }
 
 export async function readManifest(path: string): Promise<Manifest> {
-  return JSON.parse(await fs.readFile(path, 'utf8')) as Manifest;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(await fs.readFile(path, 'utf8')) as unknown;
+  } catch (error) {
+    if (error instanceof SyntaxError) throw new TestSeedError('Invalid testseed manifest: invalid JSON');
+    throw error;
+  }
+  return validateManifest(parsed);
+}
+
+const outputFormats = new Set(['json', 'jsonl', 'csv', 'md', 'env', 'tree']);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function requireString(value: unknown, field: string): asserts value is string {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new TestSeedError(`Invalid testseed manifest: ${field} must be a non-empty string`);
+  }
+}
+
+export function validateManifest(value: unknown): Manifest {
+  if (!isRecord(value)) throw new TestSeedError('Invalid testseed manifest: root must be an object');
+  if (value.tool !== 'testseed') throw new TestSeedError('Invalid testseed manifest: tool must be "testseed"');
+  for (const field of ['version', 'schema', 'seed', 'generatedAt'] as const) requireString(value[field], field);
+  if (!Array.isArray(value.files) || value.files.length === 0) {
+    throw new TestSeedError('Invalid testseed manifest: files must be a non-empty array');
+  }
+  if (!Array.isArray(value.decisions) || !value.decisions.every((decision) => typeof decision === 'string')) {
+    throw new TestSeedError('Invalid testseed manifest: decisions must be an array of strings');
+  }
+
+  for (const [index, entry] of value.files.entries()) {
+    const field = `files[${index}]`;
+    if (!isRecord(entry)) throw new TestSeedError(`Invalid testseed manifest: ${field} must be an object`);
+    requireString(entry.path, `${field}.path`);
+    if (typeof entry.format !== 'string' || !outputFormats.has(entry.format)) {
+      throw new TestSeedError(`Invalid testseed manifest: ${field}.format must be a supported output format`);
+    }
+    if (!Number.isSafeInteger(entry.bytes) || (entry.bytes as number) < 0) {
+      throw new TestSeedError(`Invalid testseed manifest: ${field}.bytes must be a non-negative integer`);
+    }
+    if (typeof entry.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(entry.sha256)) {
+      throw new TestSeedError(`Invalid testseed manifest: ${field}.sha256 must be a lowercase SHA-256 hash`);
+    }
+    if (entry.records !== undefined && (!Number.isSafeInteger(entry.records) || (entry.records as number) < 0)) {
+      throw new TestSeedError(`Invalid testseed manifest: ${field}.records must be a non-negative integer`);
+    }
+  }
+
+  return value as unknown as Manifest;
 }
 
 export async function validateManifestFiles(manifestPath: string, manifest: Manifest): Promise<void> {

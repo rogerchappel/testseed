@@ -106,8 +106,6 @@ async function main(argv: string[]): Promise<void> {
     if (!target) throw new TestSeedError('validate requires a manifest path');
     rejectTrailingArguments('validate', rest);
     const manifest = await readManifest(target);
-    if (manifest.tool !== 'testseed' || !manifest.seed || manifest.files.length === 0) throw new TestSeedError('Invalid testseed manifest');
-    for (const file of manifest.files) if (!file.path || file.bytes < 0 || !/^[a-f0-9]{64}$/.test(file.sha256)) throw new TestSeedError(`Invalid manifest file entry: ${file.path}`);
     await validateManifestFiles(target, manifest);
     console.log(`Manifest OK: ${manifest.files.length} files`);
     return;

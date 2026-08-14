@@ -5,6 +5,31 @@ import type { FieldSchema, FieldType, OutputFormat, OutputSchema, TestSeedSchema
 const outputFormats = new Set<OutputFormat>(['json', 'jsonl', 'csv', 'md', 'env', 'tree']);
 const fieldTypes = new Set<FieldType>(['id', 'name', 'slug', 'date', 'path', 'semver', 'sha', 'enum', 'int', 'template']);
 
+function stripInlineComment(line: string): string {
+  let quote: "'" | '"' | undefined;
+  let escaped = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === '\\' && quote) {
+      escaped = true;
+      continue;
+    }
+    if (character === "'" || character === '"') {
+      quote = quote === character ? undefined : quote ?? character;
+      continue;
+    }
+    if (character === '#' && !quote && index > 0 && /\s/.test(line[index - 1])) {
+      return line.slice(0, index).trimEnd();
+    }
+  }
+  return line;
+}
+
 function parseScalar(raw: string): unknown {
   const value = raw.trim();
   if (value === '') return '';
@@ -26,7 +51,7 @@ export function parseTinyYaml(text: string): TestSeedSchema {
   let currentOutput: OutputSchema | undefined;
 
   for (const rawLine of text.split(/\r?\n/)) {
-    const withoutComment = rawLine.replace(/\s+#.*$/, '');
+    const withoutComment = stripInlineComment(rawLine);
     if (!withoutComment.trim()) continue;
     const indent = withoutComment.match(/^ */)?.[0].length ?? 0;
     const line = withoutComment.trim();

@@ -47,6 +47,27 @@ test('schema validation accepts output subsets and template references', () => {
   assert.equal(buildRecords(schema, '1')[0].label, 'user-id_001');
 });
 
+test('tiny YAML comments ignore hashes inside quoted scalars', () => {
+  const parsed = parseTinyYaml(`name: "issues #1" # dataset comment
+count: 1 # record comment
+fields:
+  label:
+    type: template
+    template: "Issue \\"#\\" {index}" # template comment
+  tag:
+    type: template
+    template: 'release # {index}' # template comment
+outputs:
+  - path: out.json # output comment
+    format: json
+`);
+
+  assert.equal(parsed.name, 'issues #1');
+  assert.equal(parsed.fields.label.template, 'Issue \\"#\\" {index}');
+  assert.equal(parsed.fields.tag.template, 'release # {index}');
+  assert.equal(parsed.outputs[0].path, 'out.json');
+});
+
 test('schema validation rejects unknown output fields and template references', () => {
   const schema = (fieldLine, template = 'user-{id}') => `name: invalid\ncount: 1\nfields:\n  label:\n    type: template\n    template: ${template}\n  id:\n    type: id\noutputs:\n  - path: out.json\n    format: json\n    fields: [${fieldLine}]\n`;
 

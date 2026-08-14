@@ -2,6 +2,12 @@
 
 TestSeed schemas are intentionally tiny YAML files. The MVP parser supports the compact style used in `examples/people.yaml`: root scalars, nested `fields`, and list-style `outputs`.
 
+Inline comments begin with a `#` preceded by whitespace when the `#` is
+outside single or double quotes. A `#` inside a quoted scalar is preserved;
+backslash-escaped quote characters do not end the quoted value. For example,
+`template: "Issue # {index}" # label` keeps `Issue # {index}` and removes the
+comment. This tiny parser does not implement the full YAML specification.
+
 ## Root keys
 
 - `name`: dataset name for humans.

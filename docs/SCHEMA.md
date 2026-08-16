@@ -2,6 +2,10 @@
 
 TestSeed schemas are intentionally tiny YAML files. The MVP parser supports the compact style used in `examples/people.yaml`: root scalars, nested `fields`, and list-style `outputs`.
 
+Scalar strings may be wrapped in single or double quotes. A `#` inside a quoted
+scalar is literal, so `template: "release #1"` preserves the complete value.
+Outside quotes, whitespace followed by `#` starts a trailing comment.
+
 ## Root keys
 
 - `name`: dataset name for humans.
@@ -50,6 +54,10 @@ written.
   field; unknown names are rejected with `SCHEMA_INVALID` before output is
   created.
 - `items`: optional explicit item list for `tree` outputs.
+
+Markdown output is a pipe-delimited table. Literal pipes in generated cells are
+escaped, backslashes are preserved, and line breaks are rendered as `<br>` so
+each record retains the configured number of columns.
 
 ## Determinism model
 

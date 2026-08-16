@@ -31,7 +31,11 @@ function csvCell(value: unknown): string {
 
 function renderMarkdown(records: FixtureRecord[]): string {
   const headers = Object.keys(records[0] ?? {});
-  return [`| ${headers.join(' | ')} |`, `| ${headers.map(() => '---').join(' | ')} |`, ...records.map((record) => `| ${headers.map((header) => record[header]).join(' | ')} |`)].join('\n') + '\n';
+  return [`| ${headers.join(' | ')} |`, `| ${headers.map(() => '---').join(' | ')} |`, ...records.map((record) => `| ${headers.map((header) => markdownCell(record[header])).join(' | ')} |`)].join('\n') + '\n';
+}
+
+function markdownCell(value: unknown): string {
+  return String(value ?? '').replaceAll('\\', '\\\\').replaceAll('|', '\\|').replace(/\r?\n/g, '<br>');
 }
 
 function renderEnv(record: FixtureRecord): string {

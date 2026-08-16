@@ -80,7 +80,7 @@ outputs:
 - `json`
 - `jsonl`
 - `csv`
-- `md`
+- `md` — Markdown tables with cell delimiters safely escaped.
 - `env`
 - `tree`
 

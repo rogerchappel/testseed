@@ -19,6 +19,24 @@ function parseScalar(raw: string): unknown {
   return value.replace(/^['"]|['"]$/g, '');
 }
 
+function stripTrailingComment(line: string): string {
+  let quote: "'" | '"' | undefined;
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    if (quote) {
+      if (character === quote) {
+        if (quote === "'" && line[index + 1] === "'") index += 1;
+        else if (quote === '"' && line[index - 1] === '\\') continue;
+        else quote = undefined;
+      }
+      continue;
+    }
+    if (character === "'" || character === '"') quote = character;
+    else if (character === '#' && /\s/.test(line[index - 1] ?? '')) return line.slice(0, index).trimEnd();
+  }
+  return line;
+}
+
 export function parseTinyYaml(text: string): TestSeedSchema {
   const schema: TestSeedSchema = { name: '', count: 0, fields: {}, outputs: [] };
   let section: 'root' | 'fields' | 'outputs' | 'field' | 'output' = 'root';
@@ -26,7 +44,7 @@ export function parseTinyYaml(text: string): TestSeedSchema {
   let currentOutput: OutputSchema | undefined;
 
   for (const rawLine of text.split(/\r?\n/)) {
-    const withoutComment = rawLine.replace(/\s+#.*$/, '');
+    const withoutComment = stripTrailingComment(rawLine);
     if (!withoutComment.trim()) continue;
     const indent = withoutComment.match(/^ */)?.[0].length ?? 0;
     const line = withoutComment.trim();

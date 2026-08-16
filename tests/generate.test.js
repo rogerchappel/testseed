@@ -47,6 +47,23 @@ test('schema validation accepts output subsets and template references', () => {
   assert.equal(buildRecords(schema, '1')[0].label, 'user-id_001');
 });
 
+test('schema parsing preserves hashes in quoted scalars and removes trailing comments', () => {
+  const schema = parseTinyYaml('name: comments\ncount: 1 # one fixture\nfields:\n  note:\n    type: template\n    template: "release #1" # displayed note\noutputs:\n  - path: out.json\n    format: json\n');
+
+  assert.equal(schema.count, 1);
+  assert.equal(schema.fields.note.template, 'release #1');
+});
+
+test('markdown output escapes table delimiters in generated values', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-markdown-'));
+  const schemaPath = path.join(temp, 'schema.yaml');
+  const out = path.join(temp, 'out');
+  await fs.writeFile(schemaPath, 'name: markdown\ncount: 1\nfields:\n  label:\n    type: enum\n    values: ["A|B"]\n  note:\n    type: template\n    template: "release #1"\noutputs:\n  - path: table.md\n    format: md\n    fields: [label, note]\n');
+
+  await generate(schemaPath, { seed: 1, outDir: out });
+  assert.equal(await fs.readFile(path.join(out, 'table.md'), 'utf8'), '| label | note |\n| --- | --- |\n| A\\|B | release #1 |\n');
+});
+
 test('schema validation rejects unknown output fields and template references', () => {
   const schema = (fieldLine, template = 'user-{id}') => `name: invalid\ncount: 1\nfields:\n  label:\n    type: template\n    template: ${template}\n  id:\n    type: id\noutputs:\n  - path: out.json\n    format: json\n    fields: [${fieldLine}]\n`;
 

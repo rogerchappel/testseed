@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import { fail } from './errors.js';
+import { assertSafeRelativePath } from './path-safety.js';
 import type { FieldSchema, FieldType, OutputFormat, OutputSchema, TestSeedSchema } from './types.js';
 
 const outputFormats = new Set<OutputFormat>(['json', 'jsonl', 'csv', 'md', 'env', 'tree']);
@@ -129,8 +130,12 @@ export function validateSchema(schema: TestSeedSchema): TestSeedSchema {
   }
   validateTemplateCycles(schema);
   if (schema.outputs.length === 0) fail('Schema requires at least one output', 'SCHEMA_INVALID');
+  const outputPaths = new Set<string>();
   for (const output of schema.outputs) {
     if (!output.path) fail('Each output requires path', 'SCHEMA_INVALID');
+    const normalizedPath = assertSafeRelativePath(output.path);
+    if (outputPaths.has(normalizedPath)) fail(`Duplicate output path: ${output.path}`, 'SCHEMA_INVALID');
+    outputPaths.add(normalizedPath);
     if (!outputFormats.has(output.format)) fail(`Unsupported output format: ${output.format}`, 'SCHEMA_INVALID');
     for (const field of output.fields ?? []) {
       if (!(field in schema.fields)) fail(`Unknown output field: ${field}`, 'SCHEMA_INVALID');

@@ -47,6 +47,36 @@ test('schema validation accepts output subsets and template references', () => {
   assert.equal(buildRecords(schema, '1')[0].label, 'user-id_001');
 });
 
+test('schema validation accepts distinct nested output paths', () => {
+  const schema = parseTinyYaml('name: nested\ncount: 1\nfields:\n  id:\n    type: id\noutputs:\n  - path: json/data.txt\n    format: json\n  - path: csv/data.txt\n    format: csv\n');
+
+  assert.deepEqual(schema.outputs.map((output) => output.path), ['json/data.txt', 'csv/data.txt']);
+});
+
+test('duplicate and equivalent output paths are rejected before output is changed', async () => {
+  const outputPairs = [
+    ['same.txt', 'same.txt'],
+    ['nested/data.txt', 'nested/./data.txt'],
+    ['nested/data.txt', 'nested\\\\data.txt'],
+  ];
+
+  for (const [first, second] of outputPairs) {
+    const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-output-collision-'));
+    const schema = path.join(temp, 'schema.yaml');
+    const out = path.join(temp, 'out');
+    await fs.mkdir(out);
+    await fs.writeFile(path.join(out, 'sentinel.txt'), 'keep me');
+    await fs.writeFile(schema, `name: collision\ncount: 1\nfields:\n  id:\n    type: id\noutputs:\n  - path: ${first}\n    format: json\n  - path: ${second}\n    format: csv\n`);
+
+    await assert.rejects(
+      () => generate(schema, { seed: 1, outDir: out, clean: true }),
+      (error) => error?.code === 'SCHEMA_INVALID' && /Duplicate output path/.test(error.message)
+    );
+    assert.deepEqual(await fs.readdir(out), ['sentinel.txt']);
+    assert.equal(await fs.readFile(path.join(out, 'sentinel.txt'), 'utf8'), 'keep me');
+  }
+});
+
 test('schema parsing preserves hashes in quoted scalars and removes trailing comments', () => {
   const schema = parseTinyYaml('name: comments\ncount: 1 # one fixture\nfields:\n  note:\n    type: template\n    template: "release #1" # displayed note\noutputs:\n  - path: out.json\n    format: json\n');
 

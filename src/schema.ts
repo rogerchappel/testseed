@@ -15,9 +15,62 @@ function parseScalar(raw: string): unknown {
   if (value.startsWith('[') && value.endsWith(']')) {
     const inner = value.slice(1, -1).trim();
     if (!inner) return [];
-    return inner.split(',').map((part) => String(parseScalar(part.trim())));
+    return parseCompactList(inner);
   }
   return value.replace(/^['"]|['"]$/g, '');
+}
+
+function parseCompactList(inner: string): string[] {
+  const values: string[] = [];
+  let value = '';
+  let quote: "'" | '"' | undefined;
+  let quoted = false;
+  let closedQuote = false;
+
+  const finish = (): void => {
+    if (quote) fail('Unterminated quote in compact list', 'SCHEMA_PARSE');
+    const item = quoted ? value : value.trim();
+    if (quoted && !closedQuote) fail('Unterminated quote in compact list', 'SCHEMA_PARSE');
+    values.push(item);
+    value = '';
+    quoted = false;
+    closedQuote = false;
+  };
+
+  for (let index = 0; index < inner.length; index += 1) {
+    const character = inner[index];
+    if (quote) {
+      if (quote === "'" && character === "'" && inner[index + 1] === "'") {
+        value += "'";
+        index += 1;
+      } else if (quote === '"' && character === '\\') {
+        const escaped = inner[index + 1];
+        if (escaped !== '"' && escaped !== '\\') fail('Unsupported escape in compact list', 'SCHEMA_PARSE');
+        value += escaped;
+        index += 1;
+      } else if (character === quote) {
+        quote = undefined;
+        closedQuote = true;
+      } else {
+        value += character;
+      }
+      continue;
+    }
+    if (character === ',') {
+      finish();
+    } else if (character === "'" || character === '"') {
+      if (value.trim() || quoted || closedQuote) fail('Unexpected quote in compact list', 'SCHEMA_PARSE');
+      value = '';
+      quote = character;
+      quoted = true;
+    } else if (closedQuote) {
+      if (!/\s/.test(character)) fail('Unexpected content after quoted compact-list item', 'SCHEMA_PARSE');
+    } else {
+      value += character;
+    }
+  }
+  finish();
+  return values;
 }
 
 function stripTrailingComment(line: string): string {

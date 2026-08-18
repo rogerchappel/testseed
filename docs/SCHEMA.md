@@ -6,6 +6,14 @@ Scalar strings may be wrapped in single or double quotes. A `#` inside a quoted
 scalar is literal, so `template: "release #1"` preserves the complete value.
 Outside quotes, whitespace followed by `#` starts a trailing comment.
 
+Compact bracket lists use commas between elements. Quote an element with
+single or double quotes when it contains a comma or `#`; those characters are
+then preserved literally, for example `values: ["Doe, Jane", 'release #1']`.
+Inside single quotes, write `''` for a literal apostrophe. Inside double quotes,
+use `\"` for a literal double quote and `\\` for a literal backslash. Other
+backslash escapes, unclosed quotes, quotes inside unquoted elements, and
+non-whitespace text after a closing quote are rejected with `SCHEMA_PARSE`.
+
 ## Root keys
 
 - `name`: dataset name for humans.

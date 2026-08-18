@@ -49,6 +49,9 @@ written.
 ## Output keys
 
 - `path`: relative output path under `--out`.
+  Paths must be unique after normalizing separators and `.` segments; equivalent
+  spellings such as `data/out.json` and `data/./out.json` are rejected with
+  `SCHEMA_INVALID` before the output directory is created or cleaned.
 - `format`: `json`, `jsonl`, `csv`, `md`, `env`, or `tree`.
 - `fields`: optional ordered field subset. Every entry must name a declared
   field; unknown names are rejected with `SCHEMA_INVALID` before output is

@@ -84,6 +84,35 @@ test('schema parsing preserves hashes in quoted scalars and removes trailing com
   assert.equal(schema.fields.note.template, 'release #1');
 });
 
+test('compact lists preserve commas, hashes, and supported quote escapes', () => {
+  const schema = parseTinyYaml(`name: quoted-lists
+count: 1
+fields:
+  label:
+    type: enum
+    values: ["Doe, Jane", 'release #1', 'Roger''s fixture', "quoted \\"value\\""]
+outputs:
+  - path: tree.txt
+    format: tree
+    fields: ["label"]
+    items: ["docs, examples", 'release #1']
+`);
+
+  assert.deepEqual(schema.fields.label.values, ['Doe, Jane', 'release #1', "Roger's fixture", 'quoted "value"']);
+  assert.deepEqual(schema.outputs[0].fields, ['label']);
+  assert.deepEqual(schema.outputs[0].items, ['docs, examples', 'release #1']);
+});
+
+test('compact lists reject malformed quoting with SCHEMA_PARSE', () => {
+  const values = ['["Doe, Jane]', '["one" trailing, two]', '[one "two", three]', '["bad\\nescape"]'];
+  for (const value of values) {
+    assert.throws(
+      () => parseTinyYaml(`name: invalid\ncount: 1\nfields:\n  label:\n    type: enum\n    values: ${value}\noutputs:\n  - path: out.json\n    format: json\n`),
+      (error) => error?.code === 'SCHEMA_PARSE'
+    );
+  }
+});
+
 test('markdown output escapes table delimiters in generated values', async () => {
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-markdown-'));
   const schemaPath = path.join(temp, 'schema.yaml');

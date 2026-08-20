@@ -75,6 +75,11 @@ function rejectTrailingArguments(command: string, args: string[]): void {
 async function main(argv: string[]): Promise<void> {
   const [command, target, ...rest] = argv;
   if (!command || command === '--help' || command === '-h') { console.log(help); return; }
+  if (command === '--version' || command === '-v') {
+    const packageJson = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')) as { version: string };
+    console.log(packageJson.version);
+    return;
+  }
   if (command === 'init') {
     if (!target) throw new TestSeedError('init requires a schema path');
     const { force } = parseInitOptions(rest);

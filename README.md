@@ -11,8 +11,11 @@ Random mock data is fun until a test flakes. Hand-written fixtures are reliable 
 ## Install
 
 ```bash
-npm install -D testseed
+npm install -D github:rogerchappel/testseed
 ```
+
+The npm registry name is not published yet. The GitHub source install above is
+the supported installation path until a registry release is available.
 
 Or run from this repository:
 

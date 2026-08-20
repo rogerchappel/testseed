@@ -26,10 +26,11 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "prepare": "npm run build",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test tests/*.test.js",
     "smoke": "npm run build && node dist/cli.js generate examples/people.yaml --seed 42 --out .tmp/smoke --clean && node dist/cli.js inspect .tmp/smoke/manifest.json && node dist/cli.js validate .tmp/smoke/manifest.json",
-    "package:smoke": "npm pack --dry-run",
+    "package:smoke": "npm run build && node scripts/package-smoke.mjs",
     "release:check": "npm test && npm run check && npm run build && npm run smoke && npm run package:smoke"
   },
   "keywords": [

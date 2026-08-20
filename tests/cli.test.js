@@ -15,6 +15,12 @@ test('cli help lists useful commands', () => {
   assert.match(result.stdout, /inspect/);
 });
 
+test('cli version matches the package', () => {
+  const result = spawnSync(process.execPath, [cli, '--version'], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout.trim(), '0.1.0');
+});
+
 test('cli init, generate, inspect, validate flow works', async () => {
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-cli-'));
   const schema = path.join(temp, 'schema.yaml');

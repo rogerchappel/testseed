@@ -31,6 +31,7 @@ function parseCompactList(inner: string): string[] {
     if (quote) fail('Unterminated quote in compact list', 'SCHEMA_PARSE');
     const item = quoted ? value : value.trim();
     if (quoted && !closedQuote) fail('Unterminated quote in compact list', 'SCHEMA_PARSE');
+    if (!quoted && item === '') fail('Empty unquoted compact-list item', 'SCHEMA_PARSE');
     values.push(item);
     value = '';
     quoted = false;

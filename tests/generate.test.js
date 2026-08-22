@@ -113,6 +113,37 @@ test('compact lists reject malformed quoting with SCHEMA_PARSE', () => {
   }
 });
 
+test('compact lists reject empty unquoted items before output is created', async () => {
+  const values = ['[admin,]', '[,admin]', '[admin,,guest]'];
+  for (const [index, value] of values.entries()) {
+    const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-empty-list-item-'));
+    const schema = path.join(temp, `schema-${index}.yaml`);
+    const out = path.join(temp, 'out');
+    await fs.writeFile(schema, `name: invalid\ncount: 1\nfields:\n  role:\n    type: enum\n    values: ${value}\noutputs:\n  - path: out.json\n    format: json\n`);
+
+    await assert.rejects(
+      () => generate(schema, { seed: 1, outDir: out }),
+      (error) => error?.code === 'SCHEMA_PARSE' && /Empty unquoted compact-list item/.test(error.message)
+    );
+    await assert.rejects(() => fs.access(out), /ENOENT/);
+  }
+});
+
+test('compact lists preserve explicitly quoted empty strings', () => {
+  const schema = parseTinyYaml(`name: quoted-empty
+count: 1
+fields:
+  role:
+    type: enum
+    values: ['', "", admin]
+outputs:
+  - path: out.json
+    format: json
+`);
+
+  assert.deepEqual(schema.fields.role.values, ['', '', 'admin']);
+});
+
 test('markdown output escapes table delimiters in generated values', async () => {
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-markdown-'));
   const schemaPath = path.join(temp, 'schema.yaml');

@@ -13,6 +13,9 @@ Inside single quotes, write `''` for a literal apostrophe. Inside double quotes,
 use `\"` for a literal double quote and `\\` for a literal backslash. Other
 backslash escapes, unclosed quotes, quotes inside unquoted elements, and
 non-whitespace text after a closing quote are rejected with `SCHEMA_PARSE`.
+Leading, trailing, and consecutive commas are also rejected because unquoted
+list elements cannot be empty. Use `''` or `""` when an empty string is
+intentional.
 
 ## Root keys
 

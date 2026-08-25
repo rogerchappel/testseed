@@ -4,7 +4,13 @@ TestSeed schemas are intentionally tiny YAML files. The MVP parser supports the 
 
 Scalar strings may be wrapped in single or double quotes. A `#` inside a quoted
 scalar is literal, so `template: "release #1"` preserves the complete value.
-Outside quotes, whitespace followed by `#` starts a trailing comment.
+Inside a single-quoted scalar, use `''` for an apostrophe, as in
+`template: 'Roger''s fixture'`. Inside a double-quoted scalar, use `\"` for a
+double quote and `\\` for a backslash, as in `name: "quoted \"schema\""`.
+The opening and closing quote must match, and the closing quote must be the last
+non-comment character. Unsupported escapes, missing or mismatched closing
+quotes, and trailing content are rejected with `SCHEMA_PARSE`. Outside quotes,
+whitespace followed by `#` starts a trailing comment.
 
 Compact bracket lists use commas between elements. Quote an element with
 single or double quotes when it contains a comma or `#`; those characters are

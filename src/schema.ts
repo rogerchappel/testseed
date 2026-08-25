@@ -17,7 +17,34 @@ function parseScalar(raw: string): unknown {
     if (!inner) return [];
     return parseCompactList(inner);
   }
-  return value.replace(/^['"]|['"]$/g, '');
+  if (value.startsWith("'") || value.startsWith('"')) return parseQuotedScalar(value);
+  if (value.endsWith("'") || value.endsWith('"')) fail('Mismatched quote in scalar', 'SCHEMA_PARSE');
+  return value;
+}
+
+function parseQuotedScalar(value: string): string {
+  const quote = value[0] as "'" | '"';
+  let parsed = '';
+
+  for (let index = 1; index < value.length; index += 1) {
+    const character = value[index];
+    if (quote === "'" && character === "'" && value[index + 1] === "'") {
+      parsed += "'";
+      index += 1;
+    } else if (quote === '"' && character === '\\') {
+      const escaped = value[index + 1];
+      if (escaped !== '"' && escaped !== '\\') fail('Unsupported escape in quoted scalar', 'SCHEMA_PARSE');
+      parsed += escaped;
+      index += 1;
+    } else if (character === quote) {
+      if (index !== value.length - 1) fail('Unexpected content after quoted scalar', 'SCHEMA_PARSE');
+      return parsed;
+    } else {
+      parsed += character;
+    }
+  }
+
+  fail('Unterminated quoted scalar', 'SCHEMA_PARSE');
 }
 
 function parseCompactList(inner: string): string[] {

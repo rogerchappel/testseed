@@ -84,6 +84,49 @@ test('schema parsing preserves hashes in quoted scalars and removes trailing com
   assert.equal(schema.fields.note.template, 'release #1');
 });
 
+test('standalone quoted scalars decode supported quote escapes', () => {
+  const schema = parseTinyYaml(`name: "quoted \\"schema\\""
+count: 1
+fields:
+  note:
+    type: template
+    template: 'Roger''s \\ fixture'
+outputs:
+  - path: "nested\\\\output.json"
+    format: json
+`);
+
+  assert.equal(schema.name, 'quoted "schema"');
+  assert.equal(schema.fields.note.template, "Roger's \\ fixture");
+  assert.equal(schema.outputs[0].path, 'nested\\output.json');
+});
+
+test('standalone quoted scalars reject malformed quoting with SCHEMA_PARSE', () => {
+  const values = ['"unterminated', "'unterminated", '"mismatched\'', '\'mismatched"', '"closed" trailing', '"bad\\nescape"'];
+  for (const value of values) {
+    assert.throws(
+      () => parseTinyYaml(`name: ${value}\ncount: 1\nfields:\n  id:\n    type: id\noutputs:\n  - path: out.json\n    format: json\n`),
+      (error) => error?.code === 'SCHEMA_PARSE'
+    );
+  }
+});
+
+test('malformed standalone quoted scalars are rejected before output is changed', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-malformed-scalar-'));
+  const schema = path.join(temp, 'schema.yaml');
+  const out = path.join(temp, 'out');
+  await fs.mkdir(out);
+  await fs.writeFile(path.join(out, 'sentinel.txt'), 'keep me');
+  await fs.writeFile(schema, 'name: "unterminated\ncount: 1\nfields:\n  id:\n    type: id\noutputs:\n  - path: out.json\n    format: json\n');
+
+  await assert.rejects(
+    () => generate(schema, { seed: 1, outDir: out, clean: true }),
+    (error) => error?.code === 'SCHEMA_PARSE'
+  );
+  assert.deepEqual(await fs.readdir(out), ['sentinel.txt']);
+  assert.equal(await fs.readFile(path.join(out, 'sentinel.txt'), 'utf8'), 'keep me');
+});
+
 test('compact lists preserve commas, hashes, and supported quote escapes', () => {
   const schema = parseTinyYaml(`name: quoted-lists
 count: 1

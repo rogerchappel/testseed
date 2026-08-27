@@ -156,6 +156,15 @@ test('compact lists reject malformed quoting with SCHEMA_PARSE', () => {
   }
 });
 
+test('compact lists reject unmatched opening and closing brackets with SCHEMA_PARSE', () => {
+  for (const value of ['[red, blue', 'red, blue]']) {
+    assert.throws(
+      () => parseTinyYaml(`name: invalid\ncount: 1\nfields:\n  color:\n    type: enum\n    values: ${value}\noutputs:\n  - path: out.json\n    format: json\n`),
+      (error) => error?.code === 'SCHEMA_PARSE' && /Unmatched bracket/.test(error.message)
+    );
+  }
+});
+
 test('compact lists reject empty unquoted items before output is created', async () => {
   const values = ['[admin,]', '[,admin]', '[admin,,guest]'];
   for (const [index, value] of values.entries()) {

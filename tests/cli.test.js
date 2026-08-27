@@ -133,6 +133,19 @@ test('generate reports invalid schema references without creating output', async
   }
 });
 
+test('generate rejects unmatched compact-list brackets before creating output', async () => {
+  for (const [index, value] of ['[red, blue', 'red, blue]'].entries()) {
+    const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-cli-bracket-'));
+    const schema = path.join(temp, `schema-${index}.yaml`);
+    const out = path.join(temp, 'out');
+    await fs.writeFile(schema, `name: invalid\ncount: 1\nfields:\n  color:\n    type: enum\n    values: ${value}\noutputs:\n  - path: out.json\n    format: json\n`);
+    const result = spawnSync(process.execPath, [cli, 'generate', schema, '--out', out], { encoding: 'utf8' });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Unmatched bracket in compact list/);
+    await assert.rejects(() => fs.access(out), /ENOENT/);
+  }
+});
+
 test('validate reports tampered content hash mismatches', async () => {
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-validate-hash-'));
   const out = path.join(temp, 'out');

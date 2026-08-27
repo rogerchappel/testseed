@@ -19,6 +19,7 @@ function parseScalar(raw: string): unknown {
   }
   if (value.startsWith("'") || value.startsWith('"')) return parseQuotedScalar(value);
   if (value.endsWith("'") || value.endsWith('"')) fail('Mismatched quote in scalar', 'SCHEMA_PARSE');
+  if (value.startsWith('[') || value.endsWith(']')) fail('Unmatched bracket in compact list', 'SCHEMA_PARSE');
   return value;
 }
 

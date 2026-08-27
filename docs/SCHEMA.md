@@ -21,7 +21,9 @@ backslash escapes, unclosed quotes, quotes inside unquoted elements, and
 non-whitespace text after a closing quote are rejected with `SCHEMA_PARSE`.
 Leading, trailing, and consecutive commas are also rejected because unquoted
 list elements cannot be empty. Use `''` or `""` when an empty string is
-intentional.
+intentional. An opening `[` requires a closing `]`, and a stray closing `]` is
+also rejected with `SCHEMA_PARSE` rather than being treated as part of a legacy
+comma-separated value.
 
 ## Root keys
 

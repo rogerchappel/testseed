@@ -53,6 +53,22 @@ test('schema validation accepts distinct nested output paths', () => {
   assert.deepEqual(schema.outputs.map((output) => output.path), ['json/data.txt', 'csv/data.txt']);
 });
 
+test('schema parsing rejects duplicate declarations with SCHEMA_PARSE', () => {
+  const cases = [
+    ['root key name', 'name: first\nname: second\ncount: 1\nfields:\n  id:\n    type: id\noutputs:\n  - path: out.json\n    format: json\n'],
+    ['field name id', 'name: duplicate-field\ncount: 1\nfields:\n  id:\n    type: id\n  id:\n    type: name\noutputs:\n  - path: out.json\n    format: json\n'],
+    ['field id key type', 'name: duplicate-field-key\ncount: 1\nfields:\n  id:\n    type: id\n    type: name\noutputs:\n  - path: out.json\n    format: json\n'],
+    ['output key format', 'name: duplicate-output-key\ncount: 1\nfields:\n  id:\n    type: id\noutputs:\n  - path: out.json\n    format: json\n    format: csv\n'],
+  ];
+
+  for (const [declaration, schema] of cases) {
+    assert.throws(
+      () => parseTinyYaml(schema),
+      (error) => error?.code === 'SCHEMA_PARSE' && error.message === `Duplicate ${declaration}`,
+    );
+  }
+});
+
 test('duplicate and equivalent output paths are rejected before output is changed', async () => {
   const outputPairs = [
     ['same.txt', 'same.txt'],

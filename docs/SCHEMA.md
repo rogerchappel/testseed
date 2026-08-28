@@ -25,6 +25,12 @@ intentional. An opening `[` requires a closing `]`, and a stray closing `]` is
 also rejected with `SCHEMA_PARSE` rather than being treated as part of a legacy
 comma-separated value.
 
+Every declaration is unique within its scope: a root key may appear once,
+each field name may be declared once, each key may appear once within a field
+definition, and each key may appear once within an output definition.
+Duplicates are rejected with `SCHEMA_PARSE`, naming the repeated declaration,
+before the output directory is created, cleaned, or changed.
+
 ## Root keys
 
 - `name`: dataset name for humans.

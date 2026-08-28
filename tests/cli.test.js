@@ -133,6 +133,30 @@ test('generate reports invalid schema references without creating output', async
   }
 });
 
+test('generate rejects duplicate schema declarations before touching output', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-duplicates-'));
+  const out = path.join(temp, 'out');
+  const marker = path.join(out, 'keep.txt');
+  await fs.mkdir(out);
+  await fs.writeFile(marker, 'keep');
+  const schemas = [
+    ['root key name', 'name: first\nname: second\ncount: 1\nfields:\n  id:\n    type: id\noutputs:\n  - path: out.json\n    format: json\n'],
+    ['field name id', 'name: duplicate-field\ncount: 1\nfields:\n  id:\n    type: id\n  id:\n    type: name\noutputs:\n  - path: out.json\n    format: json\n'],
+    ['field id key type', 'name: duplicate-field-key\ncount: 1\nfields:\n  id:\n    type: id\n    type: name\noutputs:\n  - path: out.json\n    format: json\n'],
+    ['output key format', 'name: duplicate-output-key\ncount: 1\nfields:\n  id:\n    type: id\noutputs:\n  - path: out.json\n    format: json\n    format: csv\n'],
+  ];
+
+  for (const [declaration, contents] of schemas) {
+    const schema = path.join(temp, `${declaration.replaceAll(' ', '-')}.yaml`);
+    await fs.writeFile(schema, contents);
+    const result = spawnSync(process.execPath, [cli, 'generate', schema, '--out', out, '--clean'], { encoding: 'utf8' });
+    assert.notEqual(result.status, 0);
+    assert.equal(result.stderr, `testseed: Duplicate ${declaration}\n`);
+    assert.equal(await fs.readFile(marker, 'utf8'), 'keep');
+    assert.deepEqual(await fs.readdir(out), ['keep.txt']);
+  }
+});
+
 test('generate rejects unmatched compact-list brackets before creating output', async () => {
   for (const [index, value] of ['[red, blue', 'red, blue]'].entries()) {
     const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-cli-bracket-'));

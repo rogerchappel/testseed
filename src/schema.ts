@@ -124,7 +124,17 @@ export function parseTinyYaml(text: string): TestSeedSchema {
   const schema: TestSeedSchema = { name: '', count: 0, fields: {}, outputs: [] };
   let section: 'root' | 'fields' | 'outputs' | 'field' | 'output' = 'root';
   let currentField: FieldSchema | undefined;
+  let currentFieldName: string | undefined;
   let currentOutput: OutputSchema | undefined;
+  const rootKeys = new Set<string>();
+  const fieldNames = new Set<string>();
+  let fieldKeys = new Set<string>();
+  let outputKeys = new Set<string>();
+
+  const declare = (seen: Set<string>, key: string, description: string): void => {
+    if (seen.has(key)) fail(`Duplicate ${description}`, 'SCHEMA_PARSE');
+    seen.add(key);
+  };
 
   for (const rawLine of text.split(/\r?\n/)) {
     const withoutComment = stripTrailingComment(rawLine);
@@ -134,10 +144,12 @@ export function parseTinyYaml(text: string): TestSeedSchema {
 
     if (indent === 0) {
       currentField = undefined;
+      currentFieldName = undefined;
       currentOutput = undefined;
-      if (line === 'fields:') { section = 'fields'; continue; }
-      if (line === 'outputs:') { section = 'outputs'; continue; }
+      if (line === 'fields:') { declare(rootKeys, 'fields', 'root key fields'); section = 'fields'; continue; }
+      if (line === 'outputs:') { declare(rootKeys, 'outputs', 'root key outputs'); section = 'outputs'; continue; }
       const [key, ...rest] = line.split(':');
+      declare(rootKeys, key, `root key ${key}`);
       const value = parseScalar(rest.join(':'));
       if (key === 'name') schema.name = String(value);
       else if (key === 'count') schema.count = Number(value);
@@ -148,7 +160,10 @@ export function parseTinyYaml(text: string): TestSeedSchema {
 
     if ((section === 'fields' || section === 'field') && indent === 2 && line.endsWith(':')) {
       const name = line.slice(0, -1);
+      declare(fieldNames, name, `field name ${name}`);
       currentField = { type: '' as FieldType };
+      currentFieldName = name;
+      fieldKeys = new Set<string>();
       schema.fields[name] = currentField;
       section = 'field';
       continue;
@@ -156,10 +171,12 @@ export function parseTinyYaml(text: string): TestSeedSchema {
 
     if ((section === 'outputs' || section === 'output') && indent === 2 && line.startsWith('- ')) {
       currentOutput = { path: '', format: 'json' };
+      outputKeys = new Set<string>();
       schema.outputs.push(currentOutput);
       const rest = line.slice(2);
       if (rest.includes(':')) {
         const [key, ...parts] = rest.split(':');
+        declare(outputKeys, key.trim(), `output key ${key.trim()}`);
         assignOutput(currentOutput, key.trim(), parseScalar(parts.join(':')));
       }
       section = 'output';
@@ -168,8 +185,13 @@ export function parseTinyYaml(text: string): TestSeedSchema {
 
     const [key, ...parts] = line.split(':');
     const value = parseScalar(parts.join(':'));
-    if (section === 'field' && currentField) assignField(currentField, key.trim(), value);
-    else if (section === 'output' && currentOutput) assignOutput(currentOutput, key.trim(), value);
+    if (section === 'field' && currentField) {
+      declare(fieldKeys, key.trim(), `field ${currentFieldName} key ${key.trim()}`);
+      assignField(currentField, key.trim(), value);
+    } else if (section === 'output' && currentOutput) {
+      declare(outputKeys, key.trim(), `output key ${key.trim()}`);
+      assignOutput(currentOutput, key.trim(), value);
+    }
     else fail(`Unexpected schema line: ${rawLine}`, 'SCHEMA_PARSE');
   }
   return validateSchema(schema);

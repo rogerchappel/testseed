@@ -11,6 +11,11 @@ format and uses semantic versioning when versioned releases are published.
 
 - Initial project setup.
 
+### Fixed
+
+- Reject date generator ranges that would leave the supported four-digit ISO
+  calendar before generation can fail or change output.
+
 ## Release Links
 
 - Unreleased:
@@ -25,4 +30,3 @@ Replace placeholder links once the first release tag exists.
 - Added local-first TypeScript CLI with init, generate, inspect, and validate commands.
 - Added deterministic schema-backed generators and multi-format outputs.
 - Added fixture-backed tests, smoke checks, and safety documentation.
-

@@ -62,7 +62,10 @@ references are rejected with `SCHEMA_INVALID` before generation writes output.
 Generator-specific constraints are validated before generation:
 
 - `date.start` must be an ISO calendar date (`YYYY-MM-DD`), and `stepDays`
-  must be an integer.
+  must be an integer. The date at index `count - 1` must remain within
+  `0000-01-01` through `9999-12-31`; because the sequence is linear, this
+  guarantees every generated value remains a four-digit ISO date. Positive,
+  negative, and zero steps are supported when the complete range fits.
 - `sha.length`, when supplied, must be an integer from 1 through 64.
 - `enum.values` must contain at least one value. Optional `weights` must have
   one positive number per value.

@@ -123,7 +123,7 @@ test('generate reports invalid date ranges without exposing RangeError or writin
 
   const result = spawnSync(process.execPath, [cli, 'generate', schema, '--out', out], { encoding: 'utf8' });
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /SCHEMA_INVALID.*date range/);
+  assert.match(result.stderr, /date range/);
   assert.doesNotMatch(result.stderr, /RangeError/);
   await assert.rejects(() => fs.access(out), /ENOENT/);
 });

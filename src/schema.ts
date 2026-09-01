@@ -227,7 +227,7 @@ export function validateSchema(schema: TestSeedSchema): TestSeedSchema {
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) fail(`Invalid field name: ${name}`, 'SCHEMA_INVALID');
     if (!field.type) fail(`Field ${name} requires type`, 'SCHEMA_INVALID');
     if (!fieldTypes.has(field.type)) fail(`Unsupported field type for ${name}: ${field.type}`, 'SCHEMA_INVALID');
-    validateFieldOptions(name, field);
+    validateFieldOptions(name, field, schema.count);
     for (const reference of templateReferences(field)) {
       if (!(reference in schema.fields)) fail(`Unknown template reference in field ${name}: ${reference}`, 'SCHEMA_INVALID');
     }
@@ -271,10 +271,17 @@ function validateTemplateCycles(schema: TestSeedSchema): void {
   for (const name of Object.keys(schema.fields)) visit(name);
 }
 
-function validateFieldOptions(name: string, field: FieldSchema): void {
+function validateFieldOptions(name: string, field: FieldSchema, count: number): void {
   if (field.type === 'date') {
     if (field.start !== undefined && !isIsoDate(field.start)) fail(`Field ${name} start must be an ISO date (YYYY-MM-DD)`, 'SCHEMA_INVALID');
     if (field.stepDays !== undefined && !Number.isInteger(field.stepDays)) fail(`Field ${name} stepDays must be an integer`, 'SCHEMA_INVALID');
+    const start = Date.parse(`${field.start ?? '2024-01-01'}T00:00:00.000Z`);
+    const end = start + (field.stepDays ?? 1) * (count - 1) * 86_400_000;
+    const minimum = Date.parse('0000-01-01T00:00:00.000Z');
+    const maximum = Date.parse('9999-12-31T00:00:00.000Z');
+    if (!Number.isFinite(end) || end < minimum || end > maximum) {
+      fail(`Field ${name} date range must remain within 0000-01-01..9999-12-31 for schema count ${count}`, 'SCHEMA_INVALID');
+    }
   }
   if (field.type === 'sha' && field.length !== undefined && (!Number.isInteger(field.length) || field.length < 1 || field.length > 64)) {
     fail(`Field ${name} length must be an integer from 1 to 64`, 'SCHEMA_INVALID');

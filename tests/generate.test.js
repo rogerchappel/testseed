@@ -247,6 +247,43 @@ test('schema validation rejects invalid generator-specific options', () => {
   }
 });
 
+test('schema validation rejects date ranges that cannot produce YYYY-MM-DD values', () => {
+  const schema = (count, start, stepDays) => `name: date-range\ncount: ${count}\nfields:\n  created:\n    type: date\n    start: ${start}\n    stepDays: ${stepDays}\noutputs:\n  - path: out.json\n    format: json\n`;
+
+  for (const [count, start, stepDays] of [
+    [2, '2024-01-01', 100000000],
+    [2, '2024-01-01', -100000000],
+    [2, '9999-12-31', 1],
+    [2, '0000-01-01', -1],
+  ]) {
+    assert.throws(
+      () => parseTinyYaml(schema(count, start, stepDays)),
+      (error) => error?.code === 'SCHEMA_INVALID' && /date range/.test(error.message)
+    );
+  }
+
+  for (const [count, start, stepDays] of [
+    [2, '9999-12-30', 1],
+    [2, '0000-01-02', -1],
+    [10000, '2024-01-01', 0],
+  ]) {
+    assert.doesNotThrow(() => parseTinyYaml(schema(count, start, stepDays)));
+  }
+});
+
+test('invalid date ranges are rejected before output is written', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-date-range-'));
+  const schema = path.join(temp, 'schema.yaml');
+  const out = path.join(temp, 'out');
+  await fs.writeFile(schema, 'name: invalid-date\ncount: 2\nfields:\n  created:\n    type: date\n    start: 2024-01-01\n    stepDays: 100000000\noutputs:\n  - path: out.json\n    format: json\n');
+
+  await assert.rejects(
+    () => generate(schema, { seed: 1, outDir: out }),
+    (error) => error?.code === 'SCHEMA_INVALID' && /date range/.test(error.message)
+  );
+  await assert.rejects(() => fs.access(out), /ENOENT/);
+});
+
 test('schema validation rejects unknown field types with SCHEMA_INVALID', () => {
   assert.throws(
     () => parseTinyYaml('name: unknown\ncount: 1\nfields:\n  mystery:\n    type: definitely-not-a-generator\noutputs:\n  - path: out.json\n    format: json\n'),

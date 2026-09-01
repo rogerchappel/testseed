@@ -115,6 +115,19 @@ test('cli refuses unsafe output paths', async () => {
   assert.match(result.stderr, /Refusing path outside/);
 });
 
+test('generate reports invalid date ranges without exposing RangeError or writing output', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-cli-date-range-'));
+  const schema = path.join(temp, 'schema.yaml');
+  const out = path.join(temp, 'out');
+  await fs.writeFile(schema, 'name: invalid-date\ncount: 2\nfields:\n  created:\n    type: date\n    start: 2024-01-01\n    stepDays: 100000000\noutputs:\n  - path: out.json\n    format: json\n');
+
+  const result = spawnSync(process.execPath, [cli, 'generate', schema, '--out', out], { encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /SCHEMA_INVALID.*date range/);
+  assert.doesNotMatch(result.stderr, /RangeError/);
+  await assert.rejects(() => fs.access(out), /ENOENT/);
+});
+
 test('generate reports invalid schema references without creating output', async () => {
   const schemas = [
     'name: invalid-output\ncount: 1\nfields:\n  id:\n    type: id\noutputs:\n  - path: out.json\n    format: json\n    fields: [missing]\n',

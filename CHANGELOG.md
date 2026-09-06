@@ -13,6 +13,8 @@ format and uses semantic versioning when versioned releases are published.
 
 ### Fixed
 
+- Derive CLI and generated-manifest versions from package metadata and verify
+  version consistency during tests and package smoke checks.
 - Reject date generator ranges that would leave the supported four-digit ISO
   calendar before generation can fail or change output.
 

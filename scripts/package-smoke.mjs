@@ -22,12 +22,14 @@ try {
 
   const metadata = JSON.parse(await fs.readFile(path.join(temp, 'node_modules/testseed/package.json'), 'utf8'));
   assert.equal(metadata.name, 'testseed');
-  assert.equal(metadata.version, '0.1.0');
+  const sourceMetadata = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
+  assert.equal(metadata.version, sourceMetadata.version);
 
   assert.match(run('npx', ['--no-install', 'testseed', '--help']), /Usage:/);
   assert.equal(run('npx', ['--no-install', 'testseed', '--version']).trim(), metadata.version);
   run('npx', ['--no-install', 'testseed', 'generate', 'node_modules/testseed/examples/people.yaml', '--seed', '42', '--out', 'generated']);
-  await fs.access(path.join(temp, 'generated/manifest.json'));
+  const manifest = JSON.parse(await fs.readFile(path.join(temp, 'generated/manifest.json'), 'utf8'));
+  assert.equal(manifest.version, metadata.version);
 
   assert.equal(run(process.execPath, ['--input-type=module', '--eval', "import * as api from 'testseed'; if (typeof api.generate !== 'function') process.exit(1)"]), '');
   await fs.writeFile(path.join(temp, 'types.ts'), "import { generate } from 'testseed';\nvoid generate;\n");

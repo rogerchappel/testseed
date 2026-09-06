@@ -1,6 +1,8 @@
 # Manifest Format
 
 Every generation writes `manifest.json` beside the generated files.
+The manifest `version` is read from the installed package metadata, so it
+matches `testseed --version` and identifies the generator release.
 
 ```json
 {

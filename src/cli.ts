@@ -4,6 +4,7 @@ import path from 'node:path';
 import { generate, inspectManifest, readManifest, validateManifestFiles } from './index.js';
 import { starterSchema } from './init.js';
 import { TestSeedError } from './errors.js';
+import { packageVersion } from './package-metadata.js';
 
 const help = `testseed — deterministic fixture data from tiny schemas 🌱
 
@@ -76,8 +77,7 @@ async function main(argv: string[]): Promise<void> {
   const [command, target, ...rest] = argv;
   if (!command || command === '--help' || command === '-h') { console.log(help); return; }
   if (command === '--version' || command === '-v') {
-    const packageJson = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')) as { version: string };
-    console.log(packageJson.version);
+    console.log(packageVersion);
     return;
   }
   if (command === 'init') {

@@ -3,9 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { TestSeedError } from './errors.js';
 import { resolveInside } from './path-safety.js';
+import { packageVersion } from './package-metadata.js';
 import type { Manifest, ManifestFile } from './types.js';
-
-export const version = '0.1.0';
 
 export function hashContent(content: string): string {
   return createHash('sha256').update(content).digest('hex');
@@ -18,7 +17,7 @@ export function manifestFile(path: string, format: ManifestFile['format'], conte
 export function createManifest(schemaPath: string, seed: string, files: ManifestFile[]): Manifest {
   return {
     tool: 'testseed',
-    version,
+    version: packageVersion,
     schema: schemaPath,
     seed,
     generatedAt: 'deterministic-local-time',

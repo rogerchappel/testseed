@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 
 const cli = path.resolve('dist/cli.js');
@@ -15,10 +16,32 @@ test('cli help lists useful commands', () => {
   assert.match(result.stdout, /inspect/);
 });
 
-test('cli version matches the package', () => {
+test('cli version matches the package', async () => {
   const result = spawnSync(process.execPath, [cli, '--version'], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout.trim(), '0.1.0');
+  const metadata = JSON.parse(await fs.readFile('package.json', 'utf8'));
+  assert.equal(result.stdout.trim(), metadata.version);
+});
+
+test('package version changes flow to the CLI and generated manifests', async (t) => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'testseed-version-source-'));
+  t.after(() => fs.rm(temp, { recursive: true, force: true }));
+  await fs.cp('dist', path.join(temp, 'dist'), { recursive: true });
+  await fs.writeFile(path.join(temp, 'package.json'), JSON.stringify({ name: 'testseed', version: '9.8.7', type: 'module' }));
+
+  const copiedCli = path.join(temp, 'dist', 'cli.js');
+  const cliResult = spawnSync(process.execPath, [copiedCli, '--version'], { encoding: 'utf8' });
+  assert.equal(cliResult.status, 0, cliResult.stderr);
+  assert.equal(cliResult.stdout.trim(), '9.8.7');
+
+  const manifestModule = pathToFileURL(path.join(temp, 'dist', 'manifest.js')).href;
+  const probe = spawnSync(process.execPath, [
+    '--input-type=module',
+    '--eval',
+    `const { createManifest } = await import(${JSON.stringify(manifestModule)}); console.log(createManifest('schema.yaml', '1', []).version);`
+  ], { encoding: 'utf8' });
+  assert.equal(probe.status, 0, probe.stderr);
+  assert.equal(probe.stdout.trim(), '9.8.7');
 });
 
 test('cli init, generate, inspect, validate flow works', async () => {

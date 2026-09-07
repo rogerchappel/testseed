@@ -4,7 +4,7 @@
   "description": "Deterministic fixture data from tiny schemas.",
   "type": "module",
   "bin": {
-    "testseed": "./dist/cli.js"
+    "testseed": "dist/cli.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

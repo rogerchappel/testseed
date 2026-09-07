@@ -10,6 +10,8 @@ Random mock data is fun until a test flakes. Hand-written fixtures are reliable 
 
 ## Install
 
+Install the published CLI from npm:
+
 ```bash
 npm install -D github:rogerchappel/testseed
 ```
@@ -17,7 +19,7 @@ npm install -D github:rogerchappel/testseed
 The npm registry name is not published yet. The GitHub source install above is
 the supported installation path until a registry release is available.
 
-Or run from this repository:
+To work from source instead:
 
 ```bash
 npm install
@@ -114,4 +116,4 @@ bash scripts/validate.sh
 
 ## Status
 
-MVP. Useful for small fixtures today; intentionally boring and deterministic.
+Published on npm and useful for small fixtures today; intentionally boring and deterministic.

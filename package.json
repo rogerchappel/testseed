@@ -31,8 +31,9 @@
     "test": "npm run build && node --test tests/*.test.js",
     "smoke": "npm run build && node dist/cli.js generate examples/people.yaml --seed 42 --out .tmp/smoke --clean && node dist/cli.js inspect .tmp/smoke/manifest.json && node dist/cli.js validate .tmp/smoke/manifest.json",
     "package:smoke": "npm run build && node scripts/package-smoke.mjs",
+    "docs:check": "node scripts/check-documentation-status.mjs",
     "workflow:check": "node scripts/check-release-workflows.mjs",
-    "release:check": "npm test && npm run check && npm run build && npm run smoke && npm run package:smoke && npm run workflow:check"
+    "release:check": "npm test && npm run check && npm run build && npm run smoke && npm run package:smoke && npm run docs:check && npm run workflow:check"
   },
   "keywords": [
     "fixtures",

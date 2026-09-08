@@ -10,7 +10,7 @@ Random mock data is fun until a test flakes. Hand-written fixtures are reliable 
 
 ## Install
 
-Install the published CLI from npm:
+Install the CLI directly from its GitHub source:
 
 ```bash
 npm install -D github:rogerchappel/testseed
@@ -116,4 +116,4 @@ bash scripts/validate.sh
 
 ## Status
 
-Published on npm and useful for small fixtures today; intentionally boring and deterministic.
+Available from GitHub source and useful for small fixtures today; intentionally boring and deterministic. The `testseed` npm registry name is not published yet.

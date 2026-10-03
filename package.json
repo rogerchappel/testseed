@@ -59,5 +59,6 @@
   "bugs": {
     "url": "https://github.com/rogerchappel/testseed/issues"
   },
-  "homepage": "https://github.com/rogerchappel/testseed#readme"
+  "homepage": "https://github.com/rogerchappel/testseed#readme",
+  "private": true
 }

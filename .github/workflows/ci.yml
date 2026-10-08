@@ -62,3 +62,5 @@ jobs:
           npm test --if-present
           npm run smoke --if-present
           npm run package:smoke --if-present
+          npm run docs:check --if-present
+          npm run workflow:check --if-present

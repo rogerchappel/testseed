@@ -12,12 +12,21 @@ permissions:
 
 jobs:
   repository-hygiene:
-    name: Repository hygiene
+    name: Repository hygiene (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 24]
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
 
       - name: Validate required project files
         run: |
